@@ -40,6 +40,8 @@ model Task {
   priority    String?   @default("medium")
   tags        String?
   dueDate     DateTime?
+  startTime   DateTime?
+  endTime     DateTime?
   userId      String
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime  @default(now())

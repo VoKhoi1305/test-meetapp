@@ -1,4 +1,3 @@
-// File: app/api/rooms/[id]/leave/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/utils/auth-server";
@@ -15,14 +14,35 @@ export async function POST(
 
     const { id: roomId } = await params;
 
-    console.log("Leaving room:", { roomId, userId: user.id });
+    let memberId = null;
+    try {
+      const text = await req.text();
+      if (text) {
+        const json = JSON.parse(text);
+        memberId = json.memberId;
+      }
+    } catch (e) {
+      console.warn("Error parsing leave body:", e);
+    }
 
-    await prisma.roomMember.deleteMany({
-      where: {
-        roomId: roomId,
-        userId: user.id,
-      },
-    });
+    console.log("Leaving room:", { roomId, userId: user.id, specificMemberId: memberId });
+
+
+    if (memberId) {
+      await prisma.roomMember.deleteMany({
+        where: {
+          id: memberId, 
+          userId: user.id, 
+        },
+      });
+    } else {
+      await prisma.roomMember.deleteMany({
+        where: {
+          roomId: roomId,
+          userId: user.id,
+        },
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (e: any) {

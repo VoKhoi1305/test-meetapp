@@ -1,175 +1,3 @@
-
-
-// "use client";
-
-// import { useEffect, useState } from "react";
-// import { 
-//   useStreamVideoClient, 
-//   StreamCall, 
-//   useCallStateHooks, 
-//   useCall,
-//   Call,
-//   ToggleAudioPublishingButton,
-//   ToggleVideoPublishingButton,
-//   CancelCallButton,
-// } from "@stream-io/video-react-sdk";
-// import { VideoParticipant } from "./video-participant";
-// import "@stream-io/video-react-sdk/dist/css/styles.css"; 
-
-// import Loader from "./loader"; // Tận dụng loader cũ của bạn
-// import { Button } from "../ui/button";
-// import { Mic, MicOff, Video, VideoOff, Phone } from "lucide-react";
-// import { useRouter } from "next/navigation";
-
-// export default function BattleRoom({ roomId }: { roomId: string }) {
-//   const client = useStreamVideoClient();
-//   const [call, setCall] = useState<Call | null>(null);
-
-//   // 1. Tự động Join Call khi vào trang
-//   useEffect(() => {
-//     if (!client) return;
-//     const myCall = client.call("default", roomId);
-    
-//     myCall.join({ create: true })
-//       .then(() => setCall(myCall))
-//       .catch((err) => console.error("Error joining call:", err));
-
-//     return () => {
-//       myCall.leave().catch(console.error);
-//     };
-//   }, [client, roomId]);
-
-//   if (!call) return <Loader />;
-//   return (
-//     <StreamCall call={call}>
-//       <div className="min-h-screen bg-slate-900">
-//         <div className="max-w-[1200px] mx-auto my-10 p-6 rounded-2xl bg-black/40 backdrop-blur-md border border-white/8 shadow-lg">
-//           <div className="flex items-center justify-between mb-6">
-//             <div className="text-white font-semibold text-lg">Phòng thi đấu</div>
-//             <div className="text-sm text-gray-300">Trạng thái: Live</div>
-//           </div>
-
-//           <div className="rounded-xl overflow-hidden border border-white/8 bg-black/60 p-6">
-//             <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
-//               <BattleArena />
-//             </div>
-//           </div>
-
-//                 <div className="mt-6 flex justify-center">
-//                   <div className="flex items-center gap-4">
-//                     <ToggleAudioPublishingButton />
-//                     <ToggleVideoPublishingButton />
-//                     <CancelCallButton onLeave={() => window.location.href = '/rooms'} />
-//                   </div>
-//                 </div>
-//         </div>
-//       </div>
-//     </StreamCall>
-//   );
-// }
-
-// // Tách nhỏ UI để dùng hooks của Stream dễ hơn (vẫn nằm trong cùng 1 file)
-// function BattleArena() {
-//   const { useParticipants } = useCallStateHooks();
-//   const participants = useParticipants();
-//   const call = useCall();
-  
-//   const [myScore, setMyScore] = useState(0);
-//   const [rivalScores, setRivalScores] = useState<Record<string, number>>({});
-
-//   // Logic: Tính điểm và Gửi cho đối thủ
-//   useEffect(() => {
-//     if (!call) return;
-//     const interval = setInterval(async () => {
-//       // TODO: Thay bằng hàm AI tính điểm thật của bạn
-//       const score = Math.floor(Math.random() * (100 - 50) + 50); 
-//       setMyScore(score);
-
-//       // Gửi event qua Stream SDK
-//       await call.sendCustomEvent({
-//         type: "score_update",
-//         data: { userId: call.currentUserId, score },
-//       });
-//     }, 2000);
-
-//     // Lắng nghe điểm từ đối thủ
-//     const handleEvent = (event: any) => {
-//       if (event.type === "score_update") {
-//         setRivalScores(prev => ({ ...prev, [event.data.userId]: event.data.score }));
-//       }
-//     };
-//     call.on("custom", handleEvent);
-
-//     return () => {
-//       clearInterval(interval);
-//       call.off("custom", handleEvent);
-//     };
-//   }, [call]);
-
-//   // Deduplicate by userId - simple and reliable
-//   const unique = Array.from(
-//     new Map(
-//       participants
-//         .filter((p): p is NonNullable<typeof p> => p != null)
-//         .map(p => [p.userId, p])
-//     ).values()
-//   );
-
-//   if (unique.length === 0) {
-//     return <div className="col-span-full text-center text-gray-400 py-16">Đang kết nối...</div>;
-//   }
-
-//   return (
-//     <>
-//       {unique.map((p) => {
-//         const score = p.isLocalParticipant ? myScore : (rivalScores[p.userId] || 0);
-//         return (
-//           <div key={p.userId} className="relative rounded-xl overflow-hidden border border-slate-700 bg-black/40 aspect-video">
-//             <VideoParticipant participant={p} showScore />
-
-//             <div className="absolute top-4 right-4 bg-red-600 text-white px-4 py-1 rounded-full font-bold shadow-lg z-10 animate-pulse">
-//               {score}%
-//             </div>
-
-//             <div className="absolute bottom-4 left-4 bg-black/50 text-white px-2 py-1 rounded text-sm z-20">
-//               {p.name || p.userId} {p.isLocalParticipant && "(Bạn)"}
-//             </div>
-//           </div>
-//         );
-//       })}
-//     </>
-//   );
-// }
-
-// function BattleControls({ roomId }: { roomId: string }) {
-//   const router = useRouter();
-//   const call = useStreamVideoClient()?.call("default", roomId);
-//   const [micOn, setMicOn] = useState(true);
-//   const [camOn, setCamOn] = useState(true);
-
-//   const handleEnd = async () => {
-//     try {
-//       await call?.leave();
-//     } finally {
-//       router.push('/rooms');
-//     }
-//   };
-
-//   return (
-//     <div className="flex items-center justify-center gap-4 p-2">
-//       <Button onClick={() => setMicOn(s => !s)} variant={micOn ? 'default' : 'destructive'} className="rounded-full p-3">
-//         {micOn ? <Mic className="w-4 h-4"/> : <MicOff className="w-4 h-4"/>}
-//       </Button>
-//       <Button onClick={() => setCamOn(s => !s)} variant={camOn ? 'default' : 'destructive'} className="rounded-full p-3">
-//         {camOn ? <Video className="w-4 h-4"/> : <VideoOff className="w-4 h-4"/>}
-//       </Button>
-//       <Button onClick={handleEnd} variant="destructive" className="rounded-full p-3">
-//         <Phone className="w-4 h-4" />
-//       </Button>
-//     </div>
-//   );
-// }
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -256,7 +84,6 @@ const BattleGrid = ({ myScore, scores }: { myScore: number, scores: Record<strin
   );
 
   return (
-    // FIX LAYOUT: Căn giữa Grid
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-7xl mx-auto h-full p-4 overflow-y-auto place-content-center">
       {uniqueParticipants.map((p) => (
         <div key={p.userId} className="aspect-video w-full transition-transform duration-500 ease-out hover:scale-[1.02]">
@@ -327,10 +154,10 @@ export default function BattleRoom({ roomId }: { roomId: string }) {
         <div className="flex-1 flex flex-col p-6 z-10 relative overflow-hidden">
           <div className="h-20 flex items-center justify-between px-8 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[2rem] mb-6 shadow-2xl shrink-0">
              <div>
-               <h1 className="text-white font-bold text-xl tracking-tight drop-shadow-lg">{roomName}</h1>
+               {/* <h1 className="text-white font-bold text-xl tracking-tight drop-shadow-lg">{roomName}</h1> */}
                <div className="flex items-center gap-2 mt-1">
                  <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                 <span className="text-[10px] text-red-400 font-bold uppercase tracking-[0.2em]">Live Battle</span>
+                 <span className="text-[10px] text-red-400 font-bold uppercase tracking-[0.2em]">Phòng thi đấu</span>
                </div>
              </div>
              <div className="flex items-center gap-3 bg-black/40 px-6 py-2.5 rounded-2xl border border-white/10 backdrop-blur-md shadow-inner">
